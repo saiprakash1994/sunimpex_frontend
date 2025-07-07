@@ -1,0 +1,166 @@
+.mainHeader {
+    width: 100%;
+    height: var(--header-height);
+    background: var(--appGradient);
+    border-radius: 0 0 24px 24px;
+    box-shadow: 0 8px 32px 0 #4f8cff22;
+    position: sticky;
+    top: 0;
+    z-index: 1040;
+    display: flex;
+    align-items: center;
+    padding: 0 2vw;
+}
+
+img {
+    border-radius: 20%;
+}
+
+.appNav {
+    width: 100%;
+    justify-content: space-between;
+    height: 100%;
+    align-items: center;
+    display: flex;
+}
+
+.brand {
+    font-size: 1.4rem;
+    font-weight: 700;
+    padding-left: 10px;
+    margin-bottom: 0;
+    color: var(--appTextColor);
+    letter-spacing: 0.5px;
+    text-shadow: 0 2px 8px #4f8cff33;
+}
+
+.profileName {
+    font-size: 1rem;
+    font-weight: 600;
+    padding-left: 10px;
+    margin-bottom: 0;
+    color: var(--appTextColor);
+}
+
+.appbrand {
+    padding: 6px 10px;
+    align-items: center;
+    display: flex;
+}
+
+.profileImage {
+    width: 35px;
+    height: 35px;
+    margin-right: 14%;
+}
+
+.profileOptions {
+    margin-right: 10px;
+}
+
+.notification {
+    font-size: 19px;
+    margin-right: 12px;
+    color: var(--appTheam);
+}
+
+.notificationCount {
+    background: red;
+    border-radius: 50%;
+    text-align: center;
+    font-size: 10px;
+    padding: 0;
+    height: 16px;
+    width: 16px;
+    position: absolute;
+    top: -6px;
+    left: 10px;
+}
+
+#dropdown-split-basic {
+    background: rgba(255, 255, 255, 0.10);
+    border: 0px;
+    color: var(--appTextColor);
+    font-weight: 600;
+    border-radius: 8px;
+    padding: 6px 16px;
+    transition: background 0.2s;
+
+    &:hover,
+    &:focus {
+        background: var(--appGradient);
+        color: var(--appTextColor);
+    }
+}
+
+.sidebar-hamburger {
+    display: block;
+    background: rgba(255, 255, 255, 0.10);
+    border: none;
+    color: #fff;
+    font-size: 2rem;
+    margin-right: 10px;
+    border-radius: 8px;
+    padding: 4px 8px;
+    transition: background 0.2s;
+    z-index: 1100;
+
+    &:hover,
+    &:focus {
+        background: #7b2ff2;
+        color: #fff;
+    }
+}
+
+.sidebar-hamburger-mobile {
+    display: block;
+}
+
+@media (min-width: 901px) {
+    .sidebar-hamburger-mobile {
+        display: none !important;
+    }
+}
+
+@media (max-width: 600px) {
+    .mainHeader {
+        padding: 0 1vw;
+        height: 48px;
+    }
+
+    .brand {
+        font-size: 1rem;
+        padding-left: 4px;
+    }
+
+    .profileName {
+        font-size: 0.9rem;
+        padding-left: 4px;
+    }
+
+    .appbrand img {
+        width: 32px !important;
+        height: 22px !important;
+    }
+
+    .sidebar-hamburger {
+        font-size: 1.3rem;
+        padding: 2px 6px;
+    }
+}
+
+.profile-icon-circle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--appGradient);
+    color: var(--appTextColor);
+    font-size: 1.25rem;
+    font-weight: bold;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
