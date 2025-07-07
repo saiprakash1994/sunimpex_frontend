@@ -11,7 +11,7 @@ import { adduserInfo } from "../../store/userInfoSlice";
 import { errorToast, successToast } from "../../../../shared/utils/appToaster";
 import { AppConstants, setItemToLocalStorage } from "../../../../shared/utils/localStorage";
 import { roles } from "../../../../shared/utils/appRoles";
-import smatrchipLogo from "../../../../assets/smatrchipLogo.png";
+import sunImpexLogo from "../../../../assets/sunimpexLogo.jpg";
 import dairyManagementImage from "../../../../assets/dairy-management.svg";
 import "./Login.scss";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -126,14 +126,14 @@ const Login = () => {
                     <div className="image-content text-center">
                         <img src={dairyManagementImage} alt="Dairy Management" className="main-image" />
                         <div className="welcome-text">
-                            <h3 className="text-primary fw-bold mb-2">SmartMilk Dairy Management</h3>
+                            <h3 className="text-primary fw-bold mb-2">Sun Impex Dairy Management</h3>
                             <p className="text-muted">Intelligent dairy operations and monitoring system</p>
                         </div>
                     </div>
                 </div>
                 <div className="login-form-section">
                     <div className="text-center mb-4">
-                        <img src={smatrchipLogo} alt="SmartChip Logo" className="logo mb-3" />
+                        <img src={sunImpexLogo} alt="Sun ImpexLogo" className="logo mb-3" />
                         <h4 className="fw-bold mb-2">Sign in to your account</h4>
                         <div className="text-muted small mb-3">Welcome back! Please enter your credentials to continue.</div>
                         <div className="security-badge">
