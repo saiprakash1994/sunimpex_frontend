@@ -25,7 +25,7 @@ import {
   useGetDeviceByIdQuery,
 } from "../../../device/store/deviceEndPoint";
 import { roles } from "../../../../shared/utils/appRoles";
-import { useGetCumulativeReportQuery } from "../../store/recordEndPoint";
+import { useGetCumulativeReportQuery, useLazyGetCumulativeReportQuery } from "../../store/recordEndPoint";
 import { saveAs } from "file-saver";
 import Papa from "papaparse";
 import jsPDF from "jspdf";
@@ -70,6 +70,8 @@ const CumilativeRecords = () => {
   const [searchParams, setSearchParams] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [milkTypeFilter, setMilkTypeFilter] = useState('ALL');
+
+  const [triggerGetCumulativeReport] = useLazyGetCumulativeReportQuery();
 
   useEffect(() => {
     if (isDevice && deviceid) setDeviceCode(deviceid);
@@ -179,7 +181,24 @@ const CumilativeRecords = () => {
 
   } = resultData || {};
 
-  const handleExportCSV = () => {
+  const fetchAllCumulativeRecordsForExport = async () => {
+    const params = {
+      deviceid: deviceCode,
+      fromCode,
+      toCode,
+      fromDate: formattedFromDate,
+      toDate: formattedToDate
+      // Do NOT include page or limit for export
+    };
+    const result = await triggerGetCumulativeReport({ params }).unwrap();
+    return result;
+  };
+
+  const handleExportCSV = async () => {
+    const result = await fetchAllCumulativeRecordsForExport();
+    const allRecords = result?.data || [];
+    const allMilkTypeTotals = result?.milkTypeTotals || [];
+    const totalMembers = result?.totalMembers || 0;
     if (totalMembers === 0) {
       alert("No data available to export.");
       return;
@@ -194,8 +213,8 @@ const CumilativeRecords = () => {
     csvSections.push(""); // spacer
 
     // Member Records
-    if (records?.length) {
-      const recordsCSVData = records?.map((record, index) => ({
+    if (allRecords.length) {
+      const recordsCSVData = allRecords?.map((record, index) => ({
         SNO: index + 1,
         MemberCode: record?.CODE,
         MilkType: record?.MILKTYPE,
@@ -215,8 +234,8 @@ const CumilativeRecords = () => {
     }
 
     // COW Totals
-    if (cowMilkTypeTotals?.length) {
-      const cowData = cowMilkTypeTotals?.map((cow) => ({
+    if (allMilkTypeTotals?.length) {
+      const cowData = allMilkTypeTotals?.map((cow) => ({
         MilkType: cow?.MILKTYPE,
         MemberCount: cow?.memberCount,
         AvgFAT: cow?.avgFat,
@@ -273,10 +292,14 @@ const CumilativeRecords = () => {
     const blob = new Blob([csvSections.join("\n")], {
       type: "text/csv;charset=utf-8",
     });
-    saveAs(blob, `${deviceCode}_Payment_Register.csv`);
+    saveAs(blob, `${deviceCode}_Cumulative_Report_${getToday()}.csv`);
   };
 
-  const handleExportPDF = () => {
+  const handleExportPDF = async () => {
+    const result = await fetchAllCumulativeRecordsForExport();
+    const allRecords = result?.data || [];
+    const allMilkTypeTotals = result?.milkTypeTotals || [];
+    const totalMembers = result?.totalMembers || 0;
     if (totalMembers === 0) {
       alert("No data available to export.");
       return;
@@ -305,8 +328,8 @@ const CumilativeRecords = () => {
     currentY += 6;
 
     // Member-wise Table
-    if (records?.length) {
-      const memberTable = records?.map((record, index) => [
+    if (allRecords?.length) {
+      const memberTable = allRecords?.map((record, index) => [
         index + 1,
         record?.CODE,
         record?.MILKTYPE,
@@ -375,7 +398,7 @@ const CumilativeRecords = () => {
       return doc.lastAutoTable.finalY + 8;
     };
 
-    currentY = renderSection("COW Totals", cowMilkTypeTotals, currentY);
+    currentY = renderSection("COW Totals", allMilkTypeTotals, currentY);
     currentY = renderSection("BUF Totals", bufMilkTypeTotals, currentY);
 
     // Grand Total

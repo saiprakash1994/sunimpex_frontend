@@ -46,6 +46,7 @@ const DeviceRecords = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const [recordsPerPage, setRecordsPerPage] = useState(10);
     const [totalCount, setTotalCount] = useState(0);
+    const [isExporting, setIsExporting] = useState(false);
 
     useEffect(() => {
         if (isDevice && deviceid) {
@@ -103,147 +104,156 @@ const DeviceRecords = () => {
 
     const filteredTotals = milkTypeFilter === "ALL" ? totals?.filter(t => t._id.milkType !== "TOTAL") : totals?.filter(t => t._id.milkType === milkTypeFilter);
 
-    const handleExportCSV = () => {
-        if (!totals?.length && !records?.length) {
-            alert("No data available to export.");
-            return;
-        }
-
-        let combinedCSV = "";
-
-        // Records Section
-        if (records?.length) {
-            const recordsCSVData = records.map((rec, index) => ({
-                "S.No": index + 1,
-                "Member Code": rec?.CODE,
-                "Milk Type": rec?.MILKTYPE,
-                "Shift": rec?.SHIFT,
-                "FAT": rec?.FAT?.toFixed(1),
-                "SNF": rec?.SNF?.toFixed(1),
-                "CLR": rec?.CLR?.toFixed(1),
-                "Qty (L)": rec?.QTY?.toFixed(2) || '0.00',
-                "Rate": rec?.RATE?.toFixed(2),
-                "Amount": rec?.AMOUNT?.toFixed(2) || '0.00',
-                "Incentive": rec?.INCENTIVEAMOUNT?.toFixed(2),
-                "Total": rec?.TOTAL?.toFixed(2),
-                "Analyzer": rec?.ANALYZERMODE,
-                "Weight Mode": rec?.WEIGHTMODE,
-                "Device ID": rec?.DEVICEID,
-                "Date": date
-            }));
-
-            combinedCSV += `Milk Records for ${deviceCode} on ${date}\n`;
-            combinedCSV += Papa.unparse(recordsCSVData);
-            combinedCSV += "\n\n";
-        }
-
-        // Totals Section
-        if (totals?.length) {
-            const totalsCSVData = totals.map(item => ({
-                "Milk Type": item._id?.milkType || '',
-                "Total Records": item.totalRecords,
-                "Total Quantity": item.totalQuantity?.toFixed(2) || '0.00',
-                "Total Amount": item.totalAmount?.toFixed(2) || '0.00',
-                "Total Incentive": item.totalIncentive?.toFixed(2) || '0.00',
-                "Average FAT": item.averageFat,
-                "Average SNF": item.averageSNF,
-                "Average CLR": item.averageCLR,
-                "Average Rate": item.averageRate
-            }));
-
-            combinedCSV += `Milk Totals for ${deviceCode} on ${date}\n`;
-            combinedCSV += Papa.unparse(totalsCSVData);
-        }
-
-        const blob = new Blob([combinedCSV], { type: "text/csv;charset=utf-8" });
-        saveAs(blob, `Milk_Data_${deviceCode}_${date}.csv`);
+    const fetchAllRecordsForExport = async () => {
+        const formattedDate = date.split("-").reverse().join("/");
+        const params = { date: formattedDate, deviceCode };
+        if (shift) params.shift = shift;
+        // Add other filters if needed
+        const result = await triggerGetRecords({ params }).unwrap();
+        return result;
     };
 
-    const handleExportPDF = () => {
-        if (!totals?.length && !records?.length) {
-            alert("No data available to export.");
-            return;
+    const handleExportCSV = async () => {
+        setIsExporting(true);
+        try {
+            const result = await fetchAllRecordsForExport();
+            const allRecords = result?.records || [];
+            const allTotals = result?.totals || [];
+            if (!allTotals.length && !allRecords.length) {
+                alert("No data available to export.");
+                setIsExporting(false);
+                return;
+            }
+            let combinedCSV = "";
+            if (allRecords.length) {
+                const recordsCSVData = allRecords.map((rec, index) => ({
+                    "S.No": index + 1,
+                    "Member Code": rec?.CODE,
+                    "Milk Type": rec?.MILKTYPE,
+                    "Shift": rec?.SHIFT,
+                    "FAT": rec?.FAT?.toFixed(1),
+                    "SNF": rec?.SNF?.toFixed(1),
+                    "CLR": rec?.CLR?.toFixed(1),
+                    "Qty (L)": rec?.QTY?.toFixed(2) || '0.00',
+                    "Rate": rec?.RATE?.toFixed(2),
+                    "Amount": rec?.AMOUNT?.toFixed(2) || '0.00',
+                    "Incentive": rec?.INCENTIVEAMOUNT?.toFixed(2),
+                    "Total": rec?.TOTAL?.toFixed(2),
+                    "Analyzer": rec?.ANALYZERMODE,
+                    "Weight Mode": rec?.WEIGHTMODE,
+                    "Device ID": rec?.DEVICEID,
+                    "Date": date
+                }));
+                combinedCSV += `Milk Records for ${deviceCode} on ${date}\n`;
+                combinedCSV += Papa.unparse(recordsCSVData);
+                combinedCSV += "\n\n";
+            }
+            if (allTotals.length) {
+                const totalsCSVData = allTotals.map(item => ({
+                    "Milk Type": item._id?.milkType || '',
+                    "Total Records": item.totalRecords,
+                    "Total Quantity": item.totalQuantity?.toFixed(2) || '0.00',
+                    "Total Amount": item.totalAmount?.toFixed(2) || '0.00',
+                    "Total Incentive": item.totalIncentive?.toFixed(2) || '0.00',
+                    "Average FAT": item.averageFat,
+                    "Average SNF": item.averageSNF,
+                    "Average CLR": item.averageCLR,
+                    "Average Rate": item.averageRate
+                }));
+                combinedCSV += `Milk Totals for ${deviceCode} on ${date}\n`;
+                combinedCSV += Papa.unparse(totalsCSVData);
+            }
+            const blob = new Blob([combinedCSV], { type: "text/csv;charset=utf-8" });
+            saveAs(blob, `Milk_Data_${deviceCode}_${date}.csv`);
+        } catch (err) {
+            errorToast("Failed to export data");
         }
+        setIsExporting(false);
+    };
 
-        const doc = new jsPDF();
-        let currentY = 10;
-
-        doc.setFontSize(14);
-        doc.setFont("helvetica", "bold");
-        doc.text(`Milk Data Report - ${deviceCode}`, 14, currentY);
-        currentY += 8;
-        doc.setFontSize(11);
-        doc.setFont("helvetica", "normal");
-        doc.text(`Date: ${date} | Shift: ${shift || 'ALL'} | Milk Type: ${milkTypeFilter}`, 14, currentY);
-        currentY += 8;
-
-        // Records Table
-        if (records?.length) {
-            const recordTable = records.map((rec, i) => [
-                i + 1,
-                rec?.CODE,
-                rec?.MILKTYPE,
-                rec?.SHIFT,
-                rec?.FAT?.toFixed(1),
-                rec?.SNF?.toFixed(1),
-                rec?.CLR?.toFixed(1),
-
-                rec?.QTY?.toFixed(2),
-                rec?.RATE?.toFixed(2),
-                rec?.AMOUNT?.toFixed(2),
-                rec?.INCENTIVEAMOUNT?.toFixed(2),
-                rec?.TOTAL?.toFixed(2)
-            ]);
-
-            autoTable(doc, {
-                startY: currentY,
-                head: [[
-                    "S.No", "Code", "Milk Type", "Shift", "FAT", "SNF", "CLR", "Qty (L)",
-                    "Rate", "Amount", "Incentive", "Total"
-                ]],
-                body: recordTable,
-                styles: { fontSize: 8 },
-                theme: "grid"
-            });
-
-            currentY = doc.lastAutoTable.finalY + 10;
-        }
-
-        // Totals Table
-        if (totals?.length) {
-            doc.setFontSize(12);
+    const handleExportPDF = async () => {
+        setIsExporting(true);
+        try {
+            const result = await fetchAllRecordsForExport();
+            const allRecords = result?.records || [];
+            const allTotals = result?.totals || [];
+            if (!allTotals.length && !allRecords.length) {
+                alert("No data available to export.");
+                setIsExporting(false);
+                return;
+            }
+            const doc = new jsPDF();
+            let currentY = 10;
+            doc.setFontSize(14);
             doc.setFont("helvetica", "bold");
-            doc.text("Milk Totals", 14, currentY);
-            currentY += 6;
-
-            const totalsTable = totals.map(total => [
-                total?._id?.milkType,
-                total?.totalRecords,
-                total?.averageFat,
-                total?.averageSNF,
-                total?.averageCLR,
-                total?.totalQuantity?.toFixed(2),
-                total?.averageRate,
-                total?.totalAmount?.toFixed(2),
-                total?.totalIncentive?.toFixed(2),
-                (
-                    (Number(total?.totalAmount || 0) + Number(total?.totalIncentive || 0))
-                ).toFixed(2)
-            ]);
-
-            autoTable(doc, {
-                startY: currentY,
-                head: [[
-                    "Milk Type", "Total Records", "Avg FAT", "Avg SNF", "Avg CLR", "Total Qty",
-                    "Avg Rate", "Total Amount", "Incentive", "Grand Total"
-                ]],
-                body: totalsTable,
-                theme: "striped",
-                styles: { fontSize: 9 },
-            });
+            doc.text(`Milk Data Report - ${deviceCode}`, 14, currentY);
+            currentY += 8;
+            doc.setFontSize(11);
+            doc.setFont("helvetica", "normal");
+            doc.text(`Date: ${date} | Shift: ${shift || 'ALL'} | Milk Type: ${milkTypeFilter}`, 14, currentY);
+            currentY += 8;
+            if (allRecords.length) {
+                const recordTable = allRecords.map((rec, i) => [
+                    i + 1,
+                    rec?.CODE,
+                    rec?.MILKTYPE,
+                    rec?.SHIFT,
+                    rec?.FAT?.toFixed(1),
+                    rec?.SNF?.toFixed(1),
+                    rec?.CLR?.toFixed(1),
+                    rec?.QTY?.toFixed(2),
+                    rec?.RATE?.toFixed(2),
+                    rec?.AMOUNT?.toFixed(2),
+                    rec?.INCENTIVEAMOUNT?.toFixed(2),
+                    rec?.TOTAL?.toFixed(2)
+                ]);
+                autoTable(doc, {
+                    startY: currentY,
+                    head: [[
+                        "S.No", "Code", "Milk Type", "Shift", "FAT", "SNF", "CLR", "Qty (L)",
+                        "Rate", "Amount", "Incentive", "Total"
+                    ]],
+                    body: recordTable,
+                    styles: { fontSize: 8 },
+                    theme: "grid"
+                });
+                currentY = doc.lastAutoTable.finalY + 10;
+            }
+            if (allTotals.length) {
+                doc.setFontSize(12);
+                doc.setFont("helvetica", "bold");
+                doc.text("Milk Totals", 14, currentY);
+                currentY += 6;
+                const totalsTable = allTotals.map(total => [
+                    total?._id?.milkType,
+                    total?.totalRecords,
+                    total?.averageFat,
+                    total?.averageSNF,
+                    total?.averageCLR,
+                    total?.totalQuantity?.toFixed(2),
+                    total?.averageRate,
+                    total?.totalAmount?.toFixed(2),
+                    total?.totalIncentive?.toFixed(2),
+                    (
+                        (Number(total?.totalAmount || 0) + Number(total?.totalIncentive || 0))
+                    ).toFixed(2)
+                ]);
+                autoTable(doc, {
+                    startY: currentY,
+                    head: [[
+                        "Milk Type", "Total Records", "Avg FAT", "Avg SNF", "Avg CLR", "Total Qty",
+                        "Avg Rate", "Total Amount", "Incentive", "Grand Total"
+                    ]],
+                    body: totalsTable,
+                    theme: "striped",
+                    styles: { fontSize: 9 },
+                });
+            }
+            doc.save(`Milk_Data_${deviceCode}_${date}.pdf`);
+        } catch (err) {
+            errorToast("Failed to export data");
         }
-
-        doc.save(`Milk_Data_${deviceCode}_${date}.pdf`);
+        setIsExporting(false);
     };
 
     const totalPages = Math.ceil(totalCount / recordsPerPage);
@@ -317,10 +327,10 @@ const DeviceRecords = () => {
                                         onChange={(e) => setSearchTerm(e.target.value)}
                                     />
 
-                                    <Button variant="outline-success" size="sm" className="export-button me-2" onClick={handleExportCSV}>
+                                    <Button variant="outline-success" size="sm" className="export-button me-2" onClick={handleExportCSV} disabled={isExporting}>
                                         <FontAwesomeIcon icon={faFileCsv} className="me-2" />CSV
                                     </Button>
-                                    <Button variant="outline-danger" size="sm" className="export-button" onClick={handleExportPDF}>
+                                    <Button variant="outline-danger" size="sm" className="export-button" onClick={handleExportPDF} disabled={isExporting}>
                                         <FontAwesomeIcon icon={faFilePdf} className="me-2" />PDF
                                     </Button>
                                 </div>

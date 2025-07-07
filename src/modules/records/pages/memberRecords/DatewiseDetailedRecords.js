@@ -24,7 +24,7 @@ import {
     useGetDeviceByIdQuery,
 } from "../../../device/store/deviceEndPoint";
 import { roles } from "../../../../shared/utils/appRoles";
-import { useGetDatewiseDetailedReportQuery } from "../../store/recordEndPoint";
+import { useGetDatewiseDetailedReportQuery, useLazyGetDatewiseDetailedReportQuery } from "../../store/recordEndPoint";
 import { saveAs } from "file-saver";
 import Papa from "papaparse";
 import jsPDF from "jspdf";
@@ -257,8 +257,26 @@ const DatewiseDetailedRecords = () => {
     const totalCount = resultData?.totalCount;
     const totalPages = Math.ceil(totalCount / recordsPerPage);
 
-    const handleExportCSV = () => {
-        if (!records?.length) {
+    const [triggerGetDatewiseDetailedReport] = useLazyGetDatewiseDetailedReportQuery();
+
+    const fetchAllDatewiseDetailedRecordsForExport = async () => {
+        const params = {
+            deviceId: deviceCode,
+            fromCode,
+            toCode,
+            fromDate: formattedFromDate,
+            toDate: formattedToDate,
+            shift
+            // Do NOT include page or limit for export
+        };
+        const result = await triggerGetDatewiseDetailedReport({ params }).unwrap();
+        return result;
+    };
+
+    const handleExportCSV = async () => {
+        const result = await fetchAllDatewiseDetailedRecordsForExport();
+        const allRecords = result?.data || [];
+        if (!allRecords.length) {
             alert("No data available to export.");
             return;
         }
@@ -274,7 +292,7 @@ const DatewiseDetailedRecords = () => {
         ];
         combinedCSV += Papa.unparse(header, { quotes: true }) + "\n";
 
-        records.forEach((day, dayIndex) => {
+        allRecords.forEach((day, dayIndex) => {
             combinedCSV += `Date: ${day.date}, Shift: ${day.shift}, Device: ${deviceCode}\n\n`;
 
             if (day?.records?.length) {
@@ -319,8 +337,10 @@ const DatewiseDetailedRecords = () => {
         const blob = new Blob([combinedCSV], { type: "text/csv;charset=utf-8" });
         saveAs(blob, `${getToday()}_${deviceCode}_datewise_detailed.csv`);
     };
-    const handleExportPDF = () => {
-        if (!records?.length) {
+    const handleExportPDF = async () => {
+        const result = await fetchAllDatewiseDetailedRecordsForExport();
+        const allRecords = result?.data || [];
+        if (!allRecords.length) {
             alert("No data available to export.");
             return;
         }
@@ -345,7 +365,7 @@ const DatewiseDetailedRecords = () => {
         doc.text(`Date Range: ${fromDate} to ${toDate}`, 14, currentY);
         currentY += 10;
 
-        records.forEach((day) => {
+        allRecords.forEach((day) => {
             doc.setFontSize(10);
             doc.setFont("helvetica", "bold");
             doc.text(`Date: ${day.date} | Shift: ${day.shift}`, 14, currentY);

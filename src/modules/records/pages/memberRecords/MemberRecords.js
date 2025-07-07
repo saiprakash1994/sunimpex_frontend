@@ -40,7 +40,7 @@ import {
   useGetDeviceByIdQuery,
 } from "../../../device/store/deviceEndPoint";
 import { roles } from "../../../../shared/utils/appRoles";
-import { useGetMemberCodewiseReportQuery } from "../../store/recordEndPoint";
+import { useGetMemberCodewiseReportQuery, useLazyGetMemberCodewiseReportQuery } from "../../store/recordEndPoint";
 import { skipToken } from "@reduxjs/toolkit/query";
 import '../../Records.scss';
 
@@ -150,22 +150,36 @@ const MemberRecords = () => {
     return matchesSearch && matchesMilkType && matchesShift;
   });
 
-  const handleExportCSV = () => {
-    if (!totals?.length && !records?.length) {
+  const [triggerGetMemberCodewiseReport] = useLazyGetMemberCodewiseReportQuery();
+
+  const fetchAllMemberRecordsForExport = async () => {
+    const params = {
+      deviceCode,
+      memberCode,
+      fromDate,
+      toDate
+      // Do NOT include page or limit for export
+    };
+    const result = await triggerGetMemberCodewiseReport({ params }).unwrap();
+    return result;
+  };
+
+  const handleExportCSV = async () => {
+    const result = await fetchAllMemberRecordsForExport();
+    const allRecords = result?.records || [];
+    const allTotals = result?.totals || [];
+    if (!allTotals.length && !allRecords.length) {
       alert("No data available to export.");
       return;
     }
-
     let combinedCSV = "";
-
     // Header Info
     combinedCSV += `Device Code:,${deviceCode}\n`;
-    combinedCSV += `Member Code:,${memberCode.padStart(4, "0")}\n`;
+    combinedCSV += `Member Code:,${String(memberCode).padStart(4, "0")}\n`;
     combinedCSV += `Member Records From,${fromDate},To,${toDate}\n\n`;
-
     // Records
-    if (records?.length) {
-      const recordsCSVData = records?.map((rec, index) => ({
+    if (allRecords.length) {
+      const recordsCSVData = allRecords.map((rec, index) => ({
         "S.No": index + 1,
         Date: rec?.SAMPLEDATE || "",
         Shift: rec?.SHIFT || "",
@@ -183,16 +197,14 @@ const MemberRecords = () => {
       combinedCSV += Papa.unparse(recordsCSVData);
       combinedCSV += "\n\n";
     }
-
     // Totals
-    if (totals?.length) {
-      const totalsCSVData = totals?.map((total) => ({
+    if (allTotals.length) {
+      const totalsCSVData = allTotals.map((total) => ({
         "Milk Type": total?._id?.milkType || "",
         "Total Samples": total?.totalRecords ?? "",
         "Avg FAT": total?.averageFat ?? "",
         "Avg SNF": total?.averageSNF ?? "",
         "Avg CLR": total?.averageCLR ?? "",
-
         "Total Qty": total?.totalQuantity ?? "",
         "Avg Rate": total?.averageRate ?? "",
         "Total Amount": total?.totalAmount ?? "0.00",
@@ -205,38 +217,35 @@ const MemberRecords = () => {
       combinedCSV += "Total Summary:\n";
       combinedCSV += Papa.unparse(totalsCSVData);
     }
-
     const blob = new Blob([combinedCSV], { type: "text/csv;charset=utf-8" });
-    saveAs(blob, `${memberCode.padStart(4, "0")}_Memberwise_Report_${getToday()}.csv`);
+    saveAs(blob, `${String(memberCode).padStart(4, "0")}_Memberwise_Report_${getToday()}.csv`);
   };
 
-  const handleExportPDF = () => {
-    if (!totals?.length && !records?.length) {
+  const handleExportPDF = async () => {
+    const result = await fetchAllMemberRecordsForExport();
+    const allRecords = result?.records || [];
+    const allTotals = result?.totals || [];
+    if (!allTotals.length && !allRecords.length) {
       alert("No data available to export.");
       return;
     }
-
     const doc = new jsPDF();
     let currentY = 10;
     const pageWidth = doc.internal.pageSize.getWidth();
-
     doc.setFont("helvetica", "bold");
     doc.setFontSize(18);
     const title = "MEMBERWISE REPORT";
     const titleX = (pageWidth - doc.getTextWidth(title)) / 2;
     doc.text(title, titleX, currentY);
-
     currentY += 10;
     doc.setFontSize(12);
     doc.text(`Device Code: ${deviceCode}`, 14, currentY);
-    const memberCodeText = `Member Code: ${memberCode.padStart(4, "0")}`;
+    const memberCodeText = `Member Code: ${String(memberCode).padStart(4, "0")}`;
     doc.text(memberCodeText, pageWidth - 14 - doc.getTextWidth(memberCodeText), currentY);
-
     currentY += 7;
     doc.text(`Records From: ${fromDate} To: ${toDate}`, 14, currentY);
-
-    if (records?.length) {
-      const recordsTable = records?.map((record, index) => [
+    if (allRecords.length) {
+      const recordsTable = allRecords.map((record, index) => [
         index + 1,
         record?.SAMPLEDATE || "",
         record?.SHIFT || "",
@@ -244,14 +253,12 @@ const MemberRecords = () => {
         record?.FAT ?? "",
         record?.SNF ?? "",
         record?.CLR ?? "",
-
         record?.QTY ?? "",
         record?.RATE ?? "",
         record?.AMOUNT?.toFixed(2) ?? "0.00",
         record?.INCENTIVEAMOUNT?.toFixed(2) ?? "0.00",
         record?.TOTAL?.toFixed(2) ?? "0.00",
       ]);
-
       autoTable(doc, {
         startY: currentY + 6,
         head: [[
@@ -261,15 +268,10 @@ const MemberRecords = () => {
         theme: "grid",
         styles: { fontSize: 9 },
       });
-
       currentY = doc.lastAutoTable.finalY + 10;
     }
-
-    if (totals?.length) {
-      doc.setFontSize(12);
-      doc.text("Summary:", 14, currentY);
-
-      const totalsTable = totals.map((total) => [
+    if (allTotals.length) {
+      const totalsTable = allTotals.map((total) => [
         total?._id?.milkType || "",
         total?.totalRecords ?? "",
         total?.averageFat ?? "",
@@ -284,20 +286,17 @@ const MemberRecords = () => {
           parseFloat(total?.totalIncentive || 0)
         ).toFixed(2),
       ]);
-
       autoTable(doc, {
-        startY: currentY + 6,
+        startY: currentY,
         head: [[
-          "Milk Type", "Total Samples", "Avg FAT", "Avg SNF", "Avg CLR", "Total Qty", "Avg Rate",
-          "Total Amount", "Total Incentive", "Grand Total",
+          "Milk Type", "Total Samples", "Avg FAT", "Avg SNF", "Avg CLR", "Total Qty", "Avg Rate", "Total Amount", "Total Incentive", "Grand Total",
         ]],
         body: totalsTable,
         theme: "striped",
         styles: { fontSize: 9 },
       });
     }
-
-    doc.save(`${memberCode.padStart(4, "0")}_Memberwise_Report_${getToday()}.pdf`);
+    doc.save(`${String(memberCode).padStart(4, "0")}_Memberwise_Report_${getToday()}.pdf`);
   };
 
   return (

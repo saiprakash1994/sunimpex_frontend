@@ -24,7 +24,7 @@ import {
     useGetDeviceByIdQuery,
 } from "../../../device/store/deviceEndPoint";
 import { roles } from "../../../../shared/utils/appRoles";
-import { useGetDatewiseDetailedReportQuery } from "../../store/recordEndPoint";
+import { useGetDatewiseDetailedReportQuery, useLazyGetDatewiseSummaryReportQuery } from "../../store/recordEndPoint";
 import { saveAs } from "file-saver";
 import Papa from "papaparse";
 import jsPDF from "jspdf";
@@ -149,15 +149,31 @@ const DatewiseSummaryRecords = () => {
     const totalCount = resultData?.totalCount;
     const totalPages = Math.ceil(totalCount / recordsPerPage);
 
-    const handleExportCSV = () => {
-        if (!records?.length) {
+    const [triggerGetDatewiseSummaryReport] = useLazyGetDatewiseSummaryReportQuery();
+
+    const fetchAllDatewiseSummaryRecordsForExport = async () => {
+        const params = {
+            deviceId: searchParams?.deviceCode,
+            fromCode: searchParams?.fromCode,
+            toCode: searchParams?.toCode,
+            fromDate: formattedFromDate,
+            toDate: formattedToDate,
+            shift: searchParams?.shift
+            // Do NOT include page or limit for export
+        };
+        const result = await triggerGetDatewiseSummaryReport({ params }).unwrap();
+        return result;
+    };
+
+    const handleExportCSV = async () => {
+        const result = await fetchAllDatewiseSummaryRecordsForExport();
+        const allRecords = result?.data || [];
+        if (!allRecords.length) {
             alert("No data available to export.");
             return;
         }
-
         let csvData = [];
-
-        records?.forEach((record) => {
+        allRecords.forEach((record) => {
             record?.milktypeStats.forEach((stat) => {
                 csvData.push({
                     Date: record?.date,
@@ -183,8 +199,10 @@ const DatewiseSummaryRecords = () => {
     };
 
 
-    const handleExportPDF = () => {
-        if (!records?.length) {
+    const handleExportPDF = async () => {
+        const result = await fetchAllDatewiseSummaryRecordsForExport();
+        const allRecords = result?.data || [];
+        if (!allRecords.length) {
             alert("No data available to export.");
             return;
         }
@@ -206,7 +224,7 @@ const DatewiseSummaryRecords = () => {
         doc.text(`Date: ${fromDate} to ${toDate}`, 14, currentY);
         currentY += 8;
 
-        records.forEach((record, recordIndex) => {
+        allRecords.forEach((record, recordIndex) => {
             if (recordIndex > 0) currentY += 6;
 
             doc.setFont("helvetica", "bold");

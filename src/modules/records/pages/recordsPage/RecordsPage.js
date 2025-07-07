@@ -22,9 +22,9 @@ const RecordsPage = () => {
   const tabConfig = [
     {
       key: "records",
-      title: "Device Records",
+      title: "Daily Report",
       icon: FaDatabase,
-      description: "View and manage device milk collection records",
+      description: "View and manage device milk collection reports",
       component: DeviceRecords
     },
     {

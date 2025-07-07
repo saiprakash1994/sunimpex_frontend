@@ -71,11 +71,16 @@ export const recordDetails = RecordApi.injectEndpoints({
 export const {
 
     useGetAllRecordsQuery,
-    useLazyGetAllRecordsQuery,
     useGetMultipleRecordsQuery,
     useGetMemberCodewiseReportQuery,
     useGetAbsentMemberReportQuery,
     useGetCumulativeReportQuery,
     useGetDatewiseDetailedReportQuery,
-    useGetDatewiseSummaryReportQuery
+    useGetDatewiseSummaryReportQuery,
+    useLazyGetAllRecordsQuery,
+    useLazyGetAbsentMemberReportQuery,
+    useLazyGetMemberCodewiseReportQuery,
+    useLazyGetCumulativeReportQuery,
+    useLazyGetDatewiseDetailedReportQuery,
+    useLazyGetDatewiseSummaryReportQuery
 } = recordDetails;

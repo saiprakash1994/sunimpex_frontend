@@ -25,7 +25,7 @@ import {
   useGetDeviceByIdQuery,
 } from "../../../device/store/deviceEndPoint";
 import { roles } from "../../../../shared/utils/appRoles";
-import { useGetAbsentMemberReportQuery } from "../../store/recordEndPoint";
+import { useGetAbsentMemberReportQuery, useLazyGetAbsentMemberReportQuery } from "../../store/recordEndPoint";
 import { saveAs } from "file-saver";
 import Papa from "papaparse";
 import jsPDF from "jspdf";
@@ -61,6 +61,8 @@ const AbsentMemberRecords = () => {
   const [recordsPerPage, setRecordsPerPage] = useState(10);
   const [searchParams, setSearchParams] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
+
+  const [triggerGetAbsentMemberReport] = useLazyGetAbsentMemberReportQuery();
 
   useEffect(() => {
     if (isDevice && deviceid) {
@@ -122,16 +124,24 @@ const AbsentMemberRecords = () => {
     bufAbsentCount = 0,
   } = resultData || {};
 
-  const handleExportCSV = () => {
-    if (totalMembers === 0) {
+  const fetchAllAbsentMembersForExport = async () => {
+    const formattedDate = date.split("-").reverse().join("/");
+    const params = { deviceid: deviceCode, date: formattedDate, shift };
+    // Do NOT include page or limit for export
+    const result = await triggerGetAbsentMemberReport({ params }).unwrap();
+    return result;
+  };
+
+  const handleExportCSV = async () => {
+    const result = await fetchAllAbsentMembersForExport();
+    const allAbsent = result?.absentMembers || [];
+    if (allAbsent.length === 0) {
       alert("No data available to export.");
       return;
     }
-
     let csv = "";
-
-    if (absent?.length > 0) {
-      const memberCSV = absent?.map((rec, index) => ({
+    if (allAbsent.length > 0) {
+      const memberCSV = allAbsent.map((rec, index) => ({
         "S.No": index + 1,
         "Member Code": rec?.CODE,
         "Milk Type": rec?.MILKTYPE === "C" ? "COW" : "BUFFALO",
@@ -141,39 +151,36 @@ const AbsentMemberRecords = () => {
       csv += Papa.unparse(memberCSV);
       csv += "\n\n";
     }
-
     const summary = [
       {
-        "Total Members": totalMembers,
-        "Present Members": presentCount,
-        "Absent Members": absentCount,
-        "Cow Absent": cowAbsentCount,
-        "Buffalo Absent": bufAbsentCount,
+        "Total Members": result?.totalMembers || 0,
+        "Present Members": result?.presentCount || 0,
+        "Absent Members": result?.absentCount || 0,
+        "Cow Absent": result?.cowAbsentCount || 0,
+        "Buffalo Absent": result?.bufAbsentCount || 0,
       },
     ];
     csv += `Summary\n`;
     csv += Papa.unparse(summary);
-
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
     saveAs(blob, `${deviceCode}_Absent_Members_Report_${date}_${shift}.csv`);
   };
 
-  const handleExportPDF = () => {
-    if (totalMembers === 0) {
+  const handleExportPDF = async () => {
+    const result = await fetchAllAbsentMembersForExport();
+    const allAbsent = result?.absentMembers || [];
+    if (allAbsent.length === 0) {
       alert("No data available to export.");
       return;
     }
-
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
     let y = 10;
-
     doc.setFont("helvetica", "bold");
     doc.setFontSize(16);
     const title = "Absent Members Report";
     doc.text(title, (pageWidth - doc.getTextWidth(title)) / 2, y);
     y += 10;
-
     doc.setFont("helvetica", "normal");
     doc.setFontSize(11);
     doc.text(`Date: ${date}`, 14, y);
@@ -181,15 +188,13 @@ const AbsentMemberRecords = () => {
     y += 6;
     doc.text(`Device Code: ${deviceCode}`, 14, y);
     y += 8;
-
-    if (absent?.length > 0) {
-      const tableData = absent?.map((rec, i) => [
+    if (allAbsent.length > 0) {
+      const tableData = allAbsent.map((rec, i) => [
         i + 1,
         rec?.CODE,
         rec?.MILKTYPE === "C" ? "COW" : "BUFFALO",
         rec?.MEMBERNAME || "",
       ]);
-
       autoTable(doc, {
         startY: y,
         head: [["S.No", "Member Code", "Milk Type", "Member Name"]],
@@ -197,19 +202,21 @@ const AbsentMemberRecords = () => {
         styles: { fontSize: 10 },
         theme: "grid",
       });
-
       y = doc.lastAutoTable.finalY + 10;
     }
-
     doc.setFont("helvetica", "bold");
     doc.setFontSize(12);
     doc.text("Summary", 14, y);
     y += 6;
-
     const summaryTable = [
-      [totalMembers, presentCount, absentCount, cowAbsentCount, bufAbsentCount],
+      [
+        result?.totalMembers || 0,
+        result?.presentCount || 0,
+        result?.absentCount || 0,
+        result?.cowAbsentCount || 0,
+        result?.bufAbsentCount || 0,
+      ],
     ];
-
     autoTable(doc, {
       startY: y,
       head: [["Total Members", "Present", "Absent", "Cow Absent", "Buffalo Absent"]],
@@ -217,7 +224,6 @@ const AbsentMemberRecords = () => {
       styles: { fontSize: 10 },
       theme: "striped",
     });
-
     doc.save(`${deviceCode}_Absent_Members_Report_${date}_${shift}.pdf`);
   };
 
