@@ -6,7 +6,7 @@ import { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
 import { errorToast, successToast } from "../../../../shared/utils/appToaster";
 import { UserTypeHook } from "../../../../shared/hooks/userTypeHook";
-import { useGetDeviceByCodeQuery, useGetAllDevicesQuery } from "../../../device/store/deviceEndPoint";
+import { useGetDeviceByCodeQuery, useGetAllDevicesQuery, useGetDeviceByIdQuery } from "../../../device/store/deviceEndPoint";
 import { roles } from "../../../../shared/utils/appRoles";
 import '../../Records.scss';
 import { useLazyGetAllRecordsQuery } from "../../store/recordEndPoint";
@@ -30,8 +30,12 @@ const DeviceRecords = () => {
     const deviceid = userInfo?.deviceid;
     const dairyCode = userInfo?.dairyCode;
 
-    const { data: dairyDevices = [] } = useGetDeviceByCodeQuery(dairyCode, { skip: !isDairy });
     const [triggerGetRecords, { isLoading: isFetching }] = useLazyGetAllRecordsQuery();
+    const { data: dairyDevices = [], isLoading: isDairyLoading } =
+        useGetDeviceByCodeQuery(dairyCode, { skip: !isDairy });
+
+    const { data: deviceData, isLoading: isDeviceLoading } =
+        useGetDeviceByIdQuery(deviceid, { skip: !isDevice });
 
     const deviceList = isDairy ? dairyDevices : [];
 
@@ -269,24 +273,50 @@ const DeviceRecords = () => {
                 <Card.Body>
                     <Form>
                         <Row className="align-items-end">
-                            {!isDevice && (
-                                <Col md={4}>
+                            {isDairy && (
+                                <Col md={3}>
                                     <Form.Group className="mb-3">
                                         <Form.Label className="form-label-modern"><FontAwesomeIcon icon={faMicrochip} className="me-2" />Select Device</Form.Label>
-                                        <Form.Select className="form-select-modern" value={deviceCode} onChange={e => setDeviceCode(e.target.value)}>
-                                            <option value="">-- Select Device --</option>
-                                            {deviceList?.map(dev => <option key={dev.deviceid} value={dev.deviceid}>{dev.deviceid}</option>)}
-                                        </Form.Select>
+                                        {isDairyLoading || isDeviceLoading ? (
+                                            <Spinner animation="border" size="sm" />
+                                        ) : (
+                                            <Form.Select
+                                                className="form-select-modern"
+                                                value={deviceCode}
+                                                onChange={(e) => setDeviceCode(e.target.value)}
+                                            >
+                                                <option value="">Select Device Code</option>
+                                                {deviceList?.map((dev) => (
+                                                    <option key={dev.deviceid} value={dev.deviceid}>
+                                                        {dev.deviceid}
+                                                    </option>
+                                                ))}
+                                            </Form.Select>
+                                        )}
                                     </Form.Group>
                                 </Col>
                             )}
-                            <Col md={isDevice ? 4 : 3}>
+
+                            {isDevice && (
+                                <Col md={3}>
+                                    <Form.Group className="mb-3">
+                                        <Form.Label className="form-label-modern"><FontAwesomeIcon icon={faMicrochip} className="me-2" />Device</Form.Label>
+                                        {isDeviceLoading ? (
+                                            <Spinner animation="border" size="sm" />
+                                        ) : (
+                                            <Form.Control className="form-control-modern" type="text" value={deviceCode} readOnly />
+                                        )}
+                                    </Form.Group>
+                                </Col>
+                            )}
+
+                            <Col md={3}>
                                 <Form.Group className="mb-3">
                                     <Form.Label className="form-label-modern"><FontAwesomeIcon icon={faCalendarAlt} className="me-2" />Select Date</Form.Label>
                                     <Form.Control className="form-control-modern" type="date" value={date} onChange={e => setDate(e.target.value)} />
                                 </Form.Group>
                             </Col>
-                            <Col md={isDevice ? 4 : 2}>
+                            <Col md={3}>
                                 <Form.Group className="mb-3">
                                     <Form.Label className="form-label-modern"><FontAwesomeIcon icon={faClock} className="me-2" />Shift</Form.Label>
                                     <Form.Select className="form-select-modern" value={shift} onChange={e => setShift(e.target.value)}>
@@ -296,10 +326,10 @@ const DeviceRecords = () => {
                                     </Form.Select>
                                 </Form.Group>
                             </Col>
-                            <Col md={isDevice ? 4 : 3}>
+                            <Col md={3}>
                                 <Form.Group className="mb-3">
                                     <Form.Label>&nbsp;</Form.Label>
-                                    <Button variant="primary" className="w-100 modern-button" onClick={handleSearch} disabled={isFetching}>
+                                    <Button variant="primary" className="w-100 modern-button" onClick={handleSearch} disabled={isFetching} style={{ marginTop: '2px' }}>
                                         <FontAwesomeIcon icon={faSearch} className="me-2" />
                                         {isFetching ? 'Searching...' : 'Search'}
                                     </Button>
@@ -309,6 +339,15 @@ const DeviceRecords = () => {
                     </Form>
                 </Card.Body>
             </Card>
+
+            {/* Show message before any search is performed */}
+            {!hasSearched && (
+                <Card className="mb-4">
+                    <Card.Body className="text-center text-muted py-5">
+                        Please apply filters and click <strong>Search</strong> to view records.
+                    </Card.Body>
+                </Card>
+            )}
 
             {hasSearched && (
                 <>

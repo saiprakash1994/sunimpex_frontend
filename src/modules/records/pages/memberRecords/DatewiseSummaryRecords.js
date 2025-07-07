@@ -274,7 +274,7 @@ const DatewiseSummaryRecords = () => {
                 <Card.Body>
                     <Form>
                         <Row className="align-items-end">
-                            {(isDairy || isDevice) && (
+                            {(isDairy) && (
                                 <Col md={2}>
                                     <Form.Group className="mb-3">
                                         <Form.Label className="form-label-modern"><FontAwesomeIcon icon={faMicrochip} className="me-2" />Select Device</Form.Label>
