@@ -26,8 +26,6 @@ const DevicePage = () => {
         isError: isdevicesByCodeError
     } = useGetDeviceByCodeQuery(userInfo?.dairyCode || '', { skip: userType !== roles.DAIRY });
     const [deleteDeviceById] = useDeleteDeviceMutation();
-    const { data: dairies = [] } = useGetAllDairysQuery(undefined, { skip: userType !== roles.DAIRY });
-    const [selectedDairyCode, setSelectedDairyCode] = useState("");
 
     const [search, setSearch] = useState("");
     const [page, setPage] = useState(1);
@@ -79,8 +77,7 @@ const DevicePage = () => {
     const filteredDevices = devices.filter(device => {
         const q = search.toLowerCase();
         const matchesSearch = device?.deviceid?.toLowerCase().includes(q) || device?.email?.toLowerCase().includes(q);
-        const matchesDairy = !selectedDairyCode || device?.dairyCode === selectedDairyCode;
-        return matchesSearch && matchesDairy;
+        return matchesSearch;
     });
     const totalPages = Math.ceil(filteredDevices.length / pageSize);
     const paginatedDevices = filteredDevices.slice((page - 1) * pageSize, page * pageSize);

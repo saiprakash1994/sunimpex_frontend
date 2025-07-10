@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Form, Row, Col, Container, Button, Spinner, Card, Nav, Tab, Badge } from "react-bootstrap";
-import { PageTitle } from "../../../../shared/components/PageTitle/PageTitle";
 import { successToast, errorToast } from "../../../../shared/utils/appToaster";
 import "./SettingsPage.scss";
 import { UserTypeHook } from "../../../../shared/hooks/userTypeHook";
@@ -10,7 +9,6 @@ import {
   useGetDeviceByCodeQuery,
   useGetDeviceByIdQuery,
   useEditDeviceMutation,
-  useGetAllDevicesQuery,
 } from "../../../device/store/deviceEndPoint";
 import { roles } from "../../../../shared/utils/appRoles";
 import {
@@ -30,7 +28,8 @@ import {
   FaLayerGroup,
   FaSave,
   FaBuilding,
-  FaDesktop
+  FaDesktop,
+  FaSpinner
 } from "react-icons/fa";
 
 const SettingsPage = () => {
@@ -41,20 +40,10 @@ const SettingsPage = () => {
   const navigate = useNavigate();
   const deviceid = userInfo?.deviceid;
   const dairyCode = userInfo?.dairyCode;
-
-
-
-  // Remove selectedDairyCode and dairyCodeList state and logic
-  // const [selectedDairyCode, setSelectedDairyCode] = useState("");
-  // const dairyCodeList = Array.from(
-  //   new Set(dairyDevices?.map((d) => d.deviceid?.substring(0, 3))) || []
-  // );
-  // const filteredDevices = dairyDevices?.filter((dev) =>
-  //   dev.deviceid?.startsWith(selectedDairyCode)
-  // );
   const [selectedDeviceId, setSelectedDeviceId] = useState("");
   const [originalSettings, setOriginalSettings] = useState({});
   const [settings, setSettings] = useState({});
+  const [isSaving, setIsSaving] = useState(false);
 
   // Fetch all devices for the dairy if user is dairy
   const { data: dairyDevices = [] } = useGetDeviceByCodeQuery(dairyCode, {
@@ -71,7 +60,6 @@ const SettingsPage = () => {
     data: deviceData,
     isLoading,
     isError,
-    refetch,
   } = useGetDeviceByIdQuery(idToFetch, {
     skip: !idToFetch,
   });
@@ -148,6 +136,8 @@ const SettingsPage = () => {
   };
 
   const handleSave = async () => {
+    setIsSaving(true);
+
     const hasInvalidSpecial = settings.specialCommission.some(
       (val) => !isValidCommission(val)
     );
@@ -196,10 +186,11 @@ const SettingsPage = () => {
     try {
       await editDevice({ id: idToFetch, ...payload }).unwrap();
       successToast("Settings saved successfully!");
-      navigate("/dashboard");
-      refetch();
     } catch (err) {
       console.error("Error saving settings:", err);
+    } finally {
+      setIsSaving(false);
+
     }
   };
 
@@ -677,11 +668,18 @@ const SettingsPage = () => {
                     variant="primary"
                     size="lg"
                     onClick={handleSave}
-                    disabled={areSettingsEqual(settings, originalSettings)}
+                    disabled={areSettingsEqual(settings, originalSettings) || isSaving}
                     className="save-button"
                   >
-                    <FaSave className="me-2" />
-                    Save Settings
+                    {isSaving ? (
+                      <>
+                        <FaSpinner className="spin me-2" /> Saving...
+                      </>
+                    ) : (
+                      <>
+                        <FaSave className="me-2" /> Save Settings
+                      </>
+                    )}
                   </Button>
                 </div>
               </div>
