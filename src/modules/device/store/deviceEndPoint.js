@@ -4,17 +4,18 @@ export const deviceDetails = DeviceApi.injectEndpoints({
     endpoints: (builder) => ({
         getAllDevices: builder.query({
             query: () => `device/getall`,
-            providesTags: ['device']
+            providesTags: ['device'],
+            keepUnusedDataFor: 300, // Keep data for 5 minutes
         }),
         getDeviceById: builder.query({
             query: (deviceid) => `device/deviceid/${deviceid}`,
-            providesTags: ['device']
-
+            providesTags: ['device'],
+            keepUnusedDataFor: 300, // Keep data for 5 minutes
         }),
         getDeviceByCode: builder.query({
             query: (dairyCode) => `device/devicecode/${dairyCode}`,
-            providesTags: ['device']
-
+            providesTags: ['device'],
+            keepUnusedDataFor: 300, // Keep data for 5 minutes
         }),
 
         createDevice: builder.mutation({
@@ -28,7 +29,6 @@ export const deviceDetails = DeviceApi.injectEndpoints({
 
         editDevice: builder.mutation({
             query: ({ id, ...body }) => ({
-
                 url: `device/edit/${id}`,
                 method: 'PUT',
                 body

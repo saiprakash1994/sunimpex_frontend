@@ -17,18 +17,18 @@ const store = configureStore({
         [DeviceApi.reducerPath]: DeviceApi.reducer,
         [RecordApi.reducerPath]: RecordApi.reducer,
         [UploadApi.reducerPath]: UploadApi.reducer,
-
-
-
-
     },
     middleware: (getDefaultMiddleware) =>
-        getDefaultMiddleware().concat(authApi.middleware, DairyApi.middleware, DeviceApi.middleware, RecordApi.middleware, UploadApi.middleware),
-});
-
-console.log('Initial Store State:', store.getState());
-store.subscribe(() => {
-    console.log("Redux store updated:", store.getState());
+        getDefaultMiddleware({
+            serializableCheck: {
+                // Ignore these action types
+                ignoredActions: ['persist/PERSIST'],
+                // Ignore these field paths in all actions
+                ignoredActionPaths: ['payload.timestamp'],
+                // Ignore these paths in the state
+                ignoredPaths: ['some.path.to.ignore'],
+            },
+        }).concat(authApi.middleware, DairyApi.middleware, DeviceApi.middleware, RecordApi.middleware, UploadApi.middleware),
 });
 
 export default store;

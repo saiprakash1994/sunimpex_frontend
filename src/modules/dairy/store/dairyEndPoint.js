@@ -4,11 +4,13 @@ export const dairyDetails = DairyApi.injectEndpoints({
     endpoints: (builder) => ({
         getAllDairys: builder.query({
             query: () => `dairy`,
-            providesTags: ['getAll']
+            providesTags: ['getAll'],
+            keepUnusedDataFor: 300, // Keep data for 5 minutes
         }),
 
         getDairyById: builder.query({
             query: (id) => `dairy/${id}`,
+            keepUnusedDataFor: 300, // Keep data for 5 minutes
         }),
 
         createDairy: builder.mutation({

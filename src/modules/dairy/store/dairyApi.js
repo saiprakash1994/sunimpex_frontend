@@ -8,9 +8,8 @@ export const DairyApi = createApi({
         baseUrl: `${APIUrl.URL}`,
         prepareHeaders: (headers) => {
             const token = getItemFromLocalStorage(AppConstants.accessToken);
-            console.log('Token:', token);
             if (token) {
-                headers.set('Authorization', `Bearer ${token}`); // Use Bearer convention unless your backend expects raw
+                headers.set('Authorization', `Bearer ${token}`);
             }
             return headers;
         }

@@ -10,6 +10,7 @@ export const recordDetails = RecordApi.injectEndpoints({
                 return `${basePath}?${queryString}`;
             },
             providesTags: ["devicerecords"],
+            keepUnusedDataFor: 300, // Keep data for 5 minutes
         }),
         getMultipleRecords: builder.query({
             query: (body) => {
@@ -19,6 +20,7 @@ export const recordDetails = RecordApi.injectEndpoints({
                 return `${basePath}?${queryString}`;
             },
             providesTags: ["multidevicerecords"],
+            keepUnusedDataFor: 300, // Keep data for 5 minutes
         }),
         getMemberCodewiseReport: builder.query({
             query: (body) => {
@@ -28,6 +30,7 @@ export const recordDetails = RecordApi.injectEndpoints({
                 return `${basePath}?${queryString}`;
             },
             providesTags: ["membercodereports"],
+            keepUnusedDataFor: 300, // Keep data for 5 minutes
         }),
         getAbsentMemberReport: builder.query({
             query: (body) => {
@@ -37,6 +40,7 @@ export const recordDetails = RecordApi.injectEndpoints({
                 return `${basePath}?${queryString}`;
             },
             providesTags: ["absentmemberreports"],
+            keepUnusedDataFor: 300, // Keep data for 5 minutes
         }),
         getCumulativeReport: builder.query({
             query: (body) => {
@@ -46,6 +50,7 @@ export const recordDetails = RecordApi.injectEndpoints({
                 return `${basePath}?${queryString}`;
             },
             providesTags: ["cumulativereports"],
+            keepUnusedDataFor: 300, // Keep data for 5 minutes
         }),
         getDatewiseDetailedReport: builder.query({
             query: (body) => {
@@ -55,6 +60,7 @@ export const recordDetails = RecordApi.injectEndpoints({
                 return `${basePath}?${queryString}`;
             },
             providesTags: ["datewisedetailedreports"],
+            keepUnusedDataFor: 300, // Keep data for 5 minutes
         }),
         getDatewiseSummaryReport: builder.query({
             query: (body) => {
@@ -64,6 +70,7 @@ export const recordDetails = RecordApi.injectEndpoints({
                 return `${basePath}?${queryString}`;
             },
             providesTags: ["datewisesummaryreports"],
+            keepUnusedDataFor: 300, // Keep data for 5 minutes
         }),
     }),
 });

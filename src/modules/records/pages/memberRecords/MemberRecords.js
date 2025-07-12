@@ -24,7 +24,7 @@ import {
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Table, Card, Button, Form, Spinner, Row, Col, Badge, Pagination, ButtonGroup } from "react-bootstrap";
 import { data, useNavigate } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useSelector } from "react-redux";
 import { saveAs } from "file-saver";
 
@@ -87,7 +87,7 @@ const MemberRecords = () => {
     : deviceList.find((dev) => dev.deviceid === deviceCode);
   const memberCodes = selectedDevice?.members || [];
 
-  const handleSearch = () => {
+  const handleSearch = useCallback(() => {
     if (!deviceCode || !memberCode || !fromDate || !toDate) {
       errorToast("Please fill all required fields");
       return;
@@ -103,8 +103,8 @@ const MemberRecords = () => {
       toDate,
     });
     setCurrentPage(1);
+  }, [deviceCode, memberCode, fromDate, toDate]);
 
-  };
   useEffect(() => {
     if (searchParams) {
       setSearchParams((prev) => ({ ...prev }));

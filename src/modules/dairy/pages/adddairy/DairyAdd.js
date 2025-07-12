@@ -125,7 +125,8 @@ const DairyAdd = () => {
             }
             await editDairy({ id, ...payload }).unwrap();
             successToast("Dairy updated successfully.");
-            await refetch();
+            // Remove unnecessary refetch - RTK Query handles cache invalidation
+            // await refetch();
             navigate("/");
         } catch (err) {
             const message = err?.data?.error || "Failed to save dairy.";

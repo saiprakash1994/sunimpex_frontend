@@ -14,7 +14,7 @@ import {
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Table, Card, Button, Form, Spinner, Row, Col, Badge, Pagination, ButtonGroup } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useSelector } from "react-redux";
 import { errorToast } from "../../../../shared/utils/appToaster";
 import { PageTitle } from "../../../../shared/components/PageTitle/PageTitle";
@@ -83,7 +83,7 @@ const CumilativeRecords = () => {
     : deviceList.find((dev) => dev.deviceid === deviceCode);
   const memberCodes = selectedDevice?.members || [];
 
-  const handleSearch = () => {
+  const handleSearch = useCallback(() => {
     if (!deviceCode || !fromCode || !toCode || !fromDate || !toDate) {
       errorToast("Please fill all required fields");
       return;
@@ -109,8 +109,7 @@ const CumilativeRecords = () => {
       toDate,
     });
     setCurrentPage(1);
-
-  };
+  }, [deviceCode, fromCode, toCode, fromDate, toDate]);
 
   useEffect(() => {
     if (searchParams) {

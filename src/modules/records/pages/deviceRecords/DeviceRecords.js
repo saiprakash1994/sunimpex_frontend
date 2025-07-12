@@ -2,7 +2,7 @@ import { faFileCsv, faSearch, faUsers, faFilePdf, faCalendarAlt, faFilter, faFil
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Table, Card, Button, Form, Spinner, Row, Col, Badge, Pagination, ButtonGroup } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useSelector } from "react-redux";
 import { errorToast, successToast } from "../../../../shared/utils/appToaster";
 import { UserTypeHook } from "../../../../shared/hooks/userTypeHook";
@@ -64,13 +64,7 @@ const DeviceRecords = () => {
         }
     }, [isDevice, deviceCode, date]);
 
-    useEffect(() => {
-        if (hasSearched) {
-            handleSearch();
-        }
-    }, [currentPage, recordsPerPage]);
-
-    const handleSearch = async () => {
+    const handleSearch = useCallback(async () => {
         if (!deviceCode || !date) {
             errorToast("Please select device code and date");
             return;
@@ -96,7 +90,13 @@ const DeviceRecords = () => {
             console.error(err);
             errorToast("Failed to fetch data");
         }
-    };
+    }, [deviceCode, date, shift, currentPage, recordsPerPage, triggerGetRecords]);
+
+    useEffect(() => {
+        if (hasSearched) {
+            handleSearch();
+        }
+    }, [hasSearched, handleSearch]);
 
     const milkTypeFilteredRecords = milkTypeFilter === "ALL" ? records : records?.filter(record => record?.MILKTYPE === milkTypeFilter);
 
