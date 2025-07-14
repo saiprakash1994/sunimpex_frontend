@@ -59,7 +59,7 @@ const MemberRecords = () => {
   const dairyCode = userInfo?.dairyCode;
 
   const { data: dairyDevices = [], isLoading: isDairyLoading } =
-    useGetDeviceByCodeQuery(dairyCode, { skip: !isDairy });
+    useGetDeviceByCodeQuery(dairyCode, { skip: !isDairy || !dairyCode });
 
   const { data: deviceData, isLoading: isDeviceLoading } =
     useGetDeviceByIdQuery(deviceid, { skip: !isDevice });

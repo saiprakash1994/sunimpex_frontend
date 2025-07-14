@@ -54,7 +54,7 @@ const DashboardPage = () => {
   const [selectedDeviceId, setSelectedDeviceId] = useState("");
 
   const { data: dairyDevices = [] } = useGetDeviceByCodeQuery(dairyCode, {
-    skip: !isDairy,
+    skip: !isDairy || !dairyCode,
   });
 
   const deviceList = useMemo(() => {

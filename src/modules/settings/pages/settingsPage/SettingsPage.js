@@ -47,7 +47,7 @@ const SettingsPage = () => {
 
   // Fetch all devices for the dairy if user is dairy
   const { data: dairyDevices = [] } = useGetDeviceByCodeQuery(dairyCode, {
-    skip: !isDairy,
+    skip: !isDairy || !dairyCode,
   });
 
   // For dairy role, show all devices for the user's dairy

@@ -49,7 +49,7 @@ const CumilativeRecords = () => {
 
   // Query for Dairy
   const { data: dairyDevices = [], isLoading: isDairyLoading } =
-    useGetDeviceByCodeQuery(dairyCode, { skip: !isDairy });
+    useGetDeviceByCodeQuery(dairyCode, { skip: !isDairy || !dairyCode });
 
   // Query for Device role to fetch its own data
   const { data: deviceData, isLoading: isDeviceLoading } =
